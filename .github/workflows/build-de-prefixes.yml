@@ -27,7 +27,7 @@ jobs:
 
       - name: Run all country scripts
         run: |
-          for script in scripts/*.py; do
+          for script in scripts/build_*_lists.py; do ...
             echo "Running $script"
             python "$script"
           done
