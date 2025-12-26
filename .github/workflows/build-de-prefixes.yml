@@ -1,4 +1,4 @@
-name: Build DE IP Prefixes JSON
+name: Build IP Prefixes JSON
 
 on:
   workflow_dispatch:
@@ -25,10 +25,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Build DE lists
+      - name: Run all country scripts
         run: |
-          python scripts/build_de_lists.py
-
+          for script in scripts/*.py; do
+            echo "Running $script"
+            python "$script"
+          done
    
       - name: Debug output
         run: |
