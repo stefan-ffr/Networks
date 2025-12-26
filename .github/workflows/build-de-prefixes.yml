@@ -28,7 +28,20 @@ jobs:
       - name: Build JSON
         run: |
           python scripts/build_de_prefixes.py
-
+   
+      - name: Debug output
+        run: |
+          echo "PWD=$(pwd)"
+          echo "Branch=$GITHUB_REF_NAME"
+          ls -la
+          echo "---- find json ----"
+          find . -maxdepth 3 -name "de_ip_prefixes.json" -print -exec ls -la {} \;
+          echo "---- git status ----"
+          git status --porcelain=v1
+          echo "---- head ----"
+          test -f de_ip_prefixes.json && head -n 5 de_ip_prefixes.json || echo "de_ip_prefixes.json NOT FOUND"
+          test -f de_ip_prefixes.json
+          
       - name: Commit & push if changed
         run: |
           if git diff --quiet; then
