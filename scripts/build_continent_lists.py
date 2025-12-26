@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import json
 import os
 import re
 import requests
@@ -7,14 +6,9 @@ from collections import defaultdict
 
 UA = "country-prefix-exporter/1.0 (github-actions)"
 
-# JSON mit ISO-3166 alpha2 + UN M49 region/sub-region
-# (Repo liefert mehrere Formate; dieses JSON ist sehr praktisch)
 MAPPING_URL = "https://raw.githubusercontent.com/lukes/ISO-3166-Countries-with-Regional-Codes/master/all/all.json"
-
 BASE_DIRS = ["ipv4", "ipv6", "combined", "asn"]
 
-# Optional: falls du "Americas" lieber in north_america + south_america trennen willst, müsstest du subregion nutzen.
-# Für jetzt: Kontinente nach UN-M49 "region".
 def norm_key(name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", name.strip().lower()).strip("_")
 
@@ -36,19 +30,28 @@ def write_lines(path: str, lines: list[str]):
         for l in lines:
             f.write(l + "\n")
 
+def extract_region(item) -> str:
+    # Unterstützt sowohl:
+    # - "region": "Europe"
+    # - "region": { "name": "Europe", ... }
+    region = item.get("region")
+    if isinstance(region, str):
+        return region.strip()
+    if isinstance(region, dict):
+        return (region.get("name") or "").strip()
+    return ""
+
 def main():
     mapping = get_json(MAPPING_URL)
 
-    # continent_key -> [CC, CC...]
     cont_to_cc = defaultdict(list)
     for item in mapping:
         cc = (item.get("alpha-2") or "").strip().upper()
-        region = (((item.get("region") or {}) .get("name")) or "").strip()
-        if not cc or not region:
+        region_name = extract_region(item)
+        if not cc or not region_name:
             continue
-        cont_to_cc[norm_key(region)].append(cc)
+        cont_to_cc[norm_key(region_name)].append(cc)
 
-    # Für jede Region (Kontinent) die Listen zusammenführen
     for cont_key, countries in cont_to_cc.items():
         print(f"Building continent: {cont_key} ({len(countries)} countries/areas)")
         for base in BASE_DIRS:
@@ -56,7 +59,4 @@ def main():
             for cc in countries:
                 merged += read_lines(f"{base}/{cc.lower()}.txt")
             if merged:
-                write_lines(f"{base}/{cont_key}.txt", merged)
-
-if __name__ == "__main__":
-    main()
+                write_lines(f"{base}/{c_
