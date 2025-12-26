@@ -55,7 +55,7 @@ jobs:
           
       - name: Commit & push if changed
         run: |
-          git add ipv4 ipv6 combined asn
+          git add ipv4 ipv6 combined asn meta
 
           if git diff --cached --quiet; then
             echo "No changes."
@@ -64,7 +64,14 @@ jobs:
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
           git commit -m "Update country prefix lists"
-          git push
+
+          # Remote changes integrieren (non-fast-forward vermeiden)
+          git fetch origin main
+          git pull --rebase origin main
+
+          git push origin HEAD:main
+
 
 
