@@ -4,7 +4,6 @@ import time
 import requests
 from typing import Any, Dict, List
 
-BASE = "https://stat.ripe.net/data"
 UA = "de-prefix-exporter/1.0 (github-actions)"
 
 def get_json(url: str) -> Dict[str, Any]:
@@ -13,38 +12,25 @@ def get_json(url: str) -> Dict[str, Any]:
     return r.json()
 
 def main() -> None:
-    # 1) Alle ASNs mit Country=DE
-    asns_url = f"{BASE}/country-asns/data.json?resource=DE"
-    asns = get_json(asns_url)["data"]["asns"]
+    # Liefert ASNs + IPv4 + IPv6 für DE aus RIR stats files
+    # v4_format=prefix: IPv4 ranges -> CIDR prefixes
+    url = "https://stat.ripe.net/data/country-resource-list/data.json?resource=DE&v4_format=prefix"
+    payload = get_json(url)
 
-    result: List[Dict[str, Any]] = []
-    # optional: stabile Sortierung
-    asns = sorted(asns)
+    data = payload.get("data", {})
+    resources = data.get("resources", {})
 
-    for i, asn in enumerate(asns, start=1):
-        # 2) Prefixe (announced prefixes) pro ASN
-        p_url = f"{BASE}/announced-prefixes/data.json?resource=AS{asn}"
-        data = get_json(p_url)["data"]
-
-        prefixes = data.get("prefixes", [])
-        ipv4 = sorted({p["prefix"] for p in prefixes if ":" not in p["prefix"]})
-        ipv6 = sorted({p["prefix"] for p in prefixes if ":" in p["prefix"]})
-
-        result.append({
-            "asn": f"AS{asn}",
-            "ipv4": ipv4,
-            "ipv6": ipv6,
-        })
-
-        # kleine Pause, um höflich zu sein + weniger Rate-Limit-Risiko
-        if i % 25 == 0:
-            time.sleep(1)
+    asns: List[int] = resources.get("asn", [])
+    ipv4: List[str] = resources.get("ipv4", [])
+    ipv6: List[str] = resources.get("ipv6", [])
 
     out = {
         "country": "DE",
+        "query_time": data.get("query_time"),
         "generated_at_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "count_asns": len(asns),
-        "data": result,
+        "asns": asns,
+        "ipv4": ipv4,
+        "ipv6": ipv6,
     }
 
     with open("de_ip_prefixes.json", "w", encoding="utf-8") as f:
