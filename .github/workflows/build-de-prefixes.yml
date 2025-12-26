@@ -25,12 +25,20 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run all country scripts
+      - name: Run country scripts
+        shell: bash
         run: |
-          for script in scripts/build_*_lists.py; do
+          shopt -s nullglob
+          scripts=(scripts/build_[a-z][a-z]_lists.py)
+          for script in "${scripts[@]}"; do
             echo "Running $script"
             python "$script"
           done
+
+      - name: Build continent lists
+        run: |
+          python scripts/build_continent_lists.py
+
    
       - name: Debug output
         run: |
