@@ -25,9 +25,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Build JSON
+      - name: Build DE lists
         run: |
-          python scripts/build_de_prefixes.py
+          python scripts/build_de_lists.py
+
    
       - name: Debug output
         run: |
