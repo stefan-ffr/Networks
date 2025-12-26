@@ -31,9 +31,6 @@ def write_lines(path: str, lines: list[str]):
             f.write(l + "\n")
 
 def extract_region(item) -> str:
-    # Unterstützt sowohl:
-    # - "region": "Europe"
-    # - "region": { "name": "Europe", ... }
     region = item.get("region")
     if isinstance(region, str):
         return region.strip()
@@ -44,19 +41,23 @@ def extract_region(item) -> str:
 def main():
     mapping = get_json(MAPPING_URL)
 
-    cont_to_cc = defaultdict(list)
+    continent_to_countries = defaultdict(list)
+
     for item in mapping:
         cc = (item.get("alpha-2") or "").strip().upper()
-        region_name = extract_region(item)
-        if not cc or not region_name:
-            continue
-        cont_to_cc[norm_key(region_name)].append(cc)
+        region = extract_region(item)
+        if cc and region:
+            continent_to_countries[norm_key(region)].append(cc)
 
-    for cont_key, countries in cont_to_cc.items():
-        print(f"Building continent: {cont_key} ({len(countries)} countries/areas)")
+    for continent, countries in continent_to_countries.items():
+        print(f"Building continent: {continent} ({len(countries)} countries)")
         for base in BASE_DIRS:
             merged = []
             for cc in countries:
-                merged += read_lines(f"{base}/{cc.lower()}.txt")
+                merged.extend(read_lines(f"{base}/{cc.lower()}.txt"))
+
             if merged:
-                write_lines(f"{base}/{c_
+                write_lines(f"{base}/{continent}.txt", merged)
+
+if __name__ == "__main__":
+    main()
